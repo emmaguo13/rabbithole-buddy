@@ -1,9 +1,19 @@
 export type ItemRecord = {
   id: string
   user_id: string
+  group_id: string | null
   page_url: string
   title: string | null
   saved_at: string
+  updated_at: string
+}
+
+export type ItemGroupRecord = {
+  id: string
+  user_id: string
+  label: string
+  summary: string | null
+  created_at: string
   updated_at: string
 }
 
