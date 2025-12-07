@@ -54,3 +54,8 @@
 .annotator-note-body {
   outline: none;
 }
+.annotator-highlight {
+  background: yellow;
+  padding: 0 2px;
+  cursor: pointer;
+}

@@ -7,7 +7,7 @@ import {
 } from "./messages"
 import { attachDocumentEvents } from "./notes"
 
-export type Tool = "none" | "draw" | "highlight" | "note"
+export type Tool = "none" | "draw" | "note" | "highlight"
 
 declare const chrome: {
   runtime?: {
@@ -62,7 +62,10 @@ function maybeInitUI() {
     ctx,
     getTool: getActiveTool,
   })
-  attachDocumentEvents(getActiveTool)
+  attachDocumentEvents({
+    getTool: getActiveTool,
+    isSaved: () => saved,
+  })
 }
 
 function resizeCanvas() {
@@ -84,7 +87,8 @@ function createToolbar() {
   el.querySelectorAll("button").forEach((btn) => {
     btn.addEventListener("click", () => {
       const tool = btn.getAttribute("data-tool") as Tool
-      setTool(tool)
+      const nextTool = currentTool === tool ? "none" : tool
+      setTool(nextTool)
     })
   })
 
