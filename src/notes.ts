@@ -135,9 +135,41 @@ function updateNotePosition(entry: HighlightEntry) {
   if (!anchorRect) return
 
   if (entry.note) {
-    entry.note.style.left = anchorRect.right + 8 + "px"
-    entry.note.style.top = anchorRect.top - 6 + "px"
+    placeNoteNearRect(entry.note, anchorRect)
   }
+}
+
+function placeNoteNearRect(note: HTMLDivElement, anchor: DOMRect) {
+  const viewportPadding = 12
+  const gap = 12
+  const noteRect = note.getBoundingClientRect()
+
+  // Try to place to the right of the highlight.
+  let left = anchor.right + gap
+  let top = anchor.top
+
+  // If it overflows, try to place to the left.
+  if (left + noteRect.width + viewportPadding > window.innerWidth) {
+    left = anchor.left - gap - noteRect.width
+  }
+
+  // If still overflowing, place below and center-ish.
+  if (left < viewportPadding) {
+    left = Math.min(
+      Math.max(viewportPadding, anchor.left + gap),
+      window.innerWidth - viewportPadding - noteRect.width,
+    )
+    top = anchor.bottom + gap
+  }
+
+  // Keep within viewport vertically.
+  top = Math.max(
+    viewportPadding,
+    Math.min(top, window.innerHeight - viewportPadding - noteRect.height),
+  )
+
+  note.style.left = `${left}px`
+  note.style.top = `${top}px`
 }
 
 function ensureHighlightsVisible() {
