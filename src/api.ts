@@ -1,6 +1,6 @@
 const API_BASE = "http://localhost:3000/api"
 const AUTH_TOKEN_KEY = "annotator:authToken"
-const FALLBACK_USER_ID = "dev-user" // hardcoded user id for local/dev use
+const FALLBACK_USER_ID = "00000000-0000-0000-0000-000000000000" // UUID for dev-only fallback
 
 type ItemResponse = { item: { id: string } }
 
