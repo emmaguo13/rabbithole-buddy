@@ -27,6 +27,9 @@ let documentReady = document.readyState !== "loading"
 let saved = false
 let savedItemId: string | null = null
 let loadedHighlights = false
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const normalizeId = (id?: string | null) => (id && uuidPattern.test(id) ? id : undefined)
 
 async function handleSaveRequest(message: SaveRequestMessage) {
   const pageUrl = message.url || window.location.href
@@ -84,10 +87,11 @@ function maybeInitUI() {
     getItemId: () => savedItemId,
     persistHighlight: async ({ id, text, rects }) => {
       if (!savedItemId) return null
+      const serverId = normalizeId(id)
       try {
         const savedHighlight = await saveHighlight({
           itemId: savedItemId,
-          id,
+          id: serverId,
           text,
           rects,
         })
@@ -99,10 +103,11 @@ function maybeInitUI() {
     },
     persistNote: async ({ id, content, rects, position }) => {
       if (!savedItemId) return null
+      const serverId = normalizeId(id)
       try {
         const savedNote = await saveNote({
           itemId: savedItemId,
-          id,
+          id: serverId,
           content,
           rects,
           position,
