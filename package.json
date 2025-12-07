@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "build": "esbuild src/extension.ts src/bookmark.ts --bundle --outdir=dist --format=esm --sourcemap && cp manifest.json dist/ && cp src/styles.css dist/ && cp -R icons dist/",
-    "watch": "esbuild src/extension.ts src/bookmark.ts --bundle --outdir=dist --format=esm --sourcemap --watch",
+    "watch": "sh -c 'cp manifest.json dist/ && cp src/styles.css dist/ && cp -R icons dist/ && esbuild src/extension.ts src/bookmark.ts --bundle --outdir=dist --format=esm --sourcemap --watch'",
     "dev": "next dev",
     "build:next": "next build",
     "start": "next start"

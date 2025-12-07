@@ -41,10 +41,10 @@ declare const chrome: {
 }
 
 const DEFAULT_ICON_PATHS: Record<string, string> = {
-  16: "icons/icon16.png",
-  32: "icons/icon32.png",
-  48: "icons/icon48.png",
-  128: "icons/icon128.png",
+  16: "icons/icon.png",
+  32: "icons/icon.png",
+  48: "icons/icon.png",
+  128: "icons/icon.png",
 }
 
 const SAVED_ICON_COLOR = "#39c972"
@@ -62,14 +62,15 @@ chrome.action.onClicked.addListener((tab: TabInfo) => {
   if (isSaved) {
     savedTabs.delete(tab.id)
     setIcon(tab.id, false)
-    chrome.tabs.sendMessage(tab.id, { type: UNSAVE_REQUEST } satisfies BackgroundMessage)
+    sendMessageToTab(tab.id, { type: UNSAVE_REQUEST } satisfies BackgroundMessage)
     return
   }
 
-  chrome.tabs.sendMessage(
-    tab.id,
-    { type: SAVE_REQUEST, url: tab.url, title: tab.title } satisfies BackgroundMessage,
-  )
+  sendMessageToTab(tab.id, {
+    type: SAVE_REQUEST,
+    url: tab.url,
+    title: tab.title,
+  } satisfies BackgroundMessage)
 })
 
 chrome.runtime.onMessage.addListener((message: unknown, sender) => {
@@ -89,22 +90,22 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status !== "loading") return
   savedTabs.delete(tabId)
   setIcon(tabId, false)
-  chrome.tabs.sendMessage(tabId, { type: UNSAVE_REQUEST } satisfies BackgroundMessage)
+  sendMessageToTab(tabId, { type: UNSAVE_REQUEST } satisfies BackgroundMessage)
 })
 
 function setIcon(tabId: number, saved: boolean) {
   if (!saved) {
-    chrome.action.setIcon({ tabId, path: DEFAULT_ICON_PATHS })
+    setIconSafe(tabId, { path: DEFAULT_ICON_PATHS })
     return
   }
 
   const icons = getSavedIcons()
   if (!icons) {
-    chrome.action.setIcon({ tabId, path: DEFAULT_ICON_PATHS })
+    setIconSafe(tabId, { path: DEFAULT_ICON_PATHS })
     return
   }
 
-  chrome.action.setIcon({ tabId, imageData: icons })
+  setIconSafe(tabId, { imageData: icons, path: DEFAULT_ICON_PATHS })
 }
 
 function getSavedIcons(): Record<number, ImageData> | null {
@@ -135,4 +136,34 @@ function getSavedIcons(): Record<number, ImageData> | null {
 
   savedIconCache.set(SAVED_ICON_COLOR, icons)
   return icons
+}
+
+function sendMessageToTab(tabId: number, message: BackgroundMessage) {
+  try {
+    chrome.tabs.sendMessage(tabId, message, () => {
+      const err = (chrome.runtime as { lastError?: { message?: string } })?.lastError
+      if (err) {
+        console.debug("[bookmark] Message dropped (no receiver?)", err.message)
+      }
+    })
+  } catch (error) {
+    console.debug("[bookmark] Failed to send message", error)
+  }
+}
+
+function setIconSafe(tabId: number, opts: { path?: Record<string, string>; imageData?: Record<number, ImageData> }) {
+  try {
+    chrome.action.setIcon({ tabId, ...opts }, () => {
+      const err = (chrome.runtime as { lastError?: { message?: string } })?.lastError
+      if (err) {
+        console.debug("[bookmark] setIcon failed, falling back", err.message)
+        if (opts.imageData && !opts.path) {
+          chrome.action.setIcon({ tabId, path: DEFAULT_ICON_PATHS })
+        }
+      }
+    })
+  } catch (error) {
+    console.debug("[bookmark] setIcon threw, using defaults", error)
+    chrome.action.setIcon({ tabId, path: DEFAULT_ICON_PATHS })
+  }
 }
