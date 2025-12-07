@@ -3,11 +3,30 @@
   "name": "TS PDF & Web Annotator",
   "version": "1.0",
   "description": "Draw, highlight, and add notes on any page or PDF.",
-  "permissions": ["storage"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["storage", "tabs"],
+  "background": {
+    "service_worker": "bookmark.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Save this page",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["extension.js"],
       "css": ["styles.css"],
       "run_at": "document_idle"
     }
