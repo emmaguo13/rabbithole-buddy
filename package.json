@@ -1,0 +1,12 @@
+{
+  "name": "pdf-annotator",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=esm --sourcemap && cp manifest.json dist/ && cp src/styles.css dist/",
+    "watch": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=esm --sourcemap --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.0"
+  }
+}
