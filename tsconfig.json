@@ -41,6 +41,7 @@
     "app/**/*.ts",
     "app/**/*.tsx",
     "server/**/*.ts",
+    "lib/**/*.ts",
     "supabase/**/*.sql",
     ".next/types/**/*.ts"
   ],

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { requireUser } from "@/server/auth"
-import { parseJson, serverError } from "@/server/http"
+import { optionsResponse, parseJson, serverError, withCors } from "@/server/http"
 import { itemCreateSchema } from "@/server/schemas"
 import { supabase } from "@/server/supabase"
 import type { ItemRecord } from "@/server/types"
@@ -30,5 +30,9 @@ export async function POST(req: NextRequest) {
     return serverError("Failed to save item")
   }
 
-  return NextResponse.json({ item: data as ItemRecord })
+  return withCors(NextResponse.json({ item: data as ItemRecord }))
+}
+
+export function OPTIONS() {
+  return optionsResponse()
 }

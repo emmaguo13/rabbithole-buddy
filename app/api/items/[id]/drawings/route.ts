@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { requireUser } from "@/server/auth"
-import { parseJson, serverError } from "@/server/http"
+import { optionsResponse, parseJson, serverError, withCors } from "@/server/http"
 import { ensureItemOwnership } from "@/server/items"
 import { drawingSchema } from "@/server/schemas"
 import { supabase } from "@/server/supabase"
@@ -39,5 +39,9 @@ export async function POST(
     return serverError("Failed to save drawing")
   }
 
-  return NextResponse.json({ drawing: data as DrawingRecord })
+  return withCors(NextResponse.json({ drawing: data as DrawingRecord }))
+}
+
+export function OPTIONS() {
+  return optionsResponse()
 }

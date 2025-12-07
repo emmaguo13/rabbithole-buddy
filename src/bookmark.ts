@@ -66,7 +66,10 @@ chrome.action.onClicked.addListener((tab: TabInfo) => {
     return
   }
 
-  chrome.tabs.sendMessage(tab.id, { type: SAVE_REQUEST, url: tab.url } satisfies BackgroundMessage)
+  chrome.tabs.sendMessage(
+    tab.id,
+    { type: SAVE_REQUEST, url: tab.url, title: tab.title } satisfies BackgroundMessage,
+  )
 })
 
 chrome.runtime.onMessage.addListener((message: unknown, sender) => {

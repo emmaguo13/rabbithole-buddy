@@ -1,9 +1,11 @@
 import { attachCanvasEvents } from "./drawing"
+import { saveItem } from "./api"
 import {
   SAVE_REQUEST,
   SAVE_STATE_CHANGED,
   UNSAVE_REQUEST,
   type ContentMessage,
+  type SaveRequestMessage,
 } from "./messages"
 import { attachDocumentEvents } from "./notes"
 
@@ -24,11 +26,20 @@ let toolbar: HTMLDivElement | null = null
 let documentReady = document.readyState !== "loading"
 let saved = false
 
-function handleSaveRequest() {
-  saved = true
-  maybeInitUI()
-  toggleUIVisibility(true)
-  reportSaveState(true)
+async function handleSaveRequest(message: SaveRequestMessage) {
+  const pageUrl = message.url || window.location.href
+  const title = document.title
+
+  try {
+    await saveItem({ pageUrl, title })
+    saved = true
+    maybeInitUI()
+    toggleUIVisibility(true)
+    reportSaveState(true)
+  } catch (err) {
+    console.warn("[annotator] Failed to save item", err)
+    reportSaveState(false)
+  }
 }
 
 function handleUnsaveRequest() {
@@ -163,7 +174,7 @@ function bindMessageListener() {
     if (!message || typeof message !== "object") return
     const { type } = message as { type?: string }
 
-    if (type === SAVE_REQUEST) handleSaveRequest()
+    if (type === SAVE_REQUEST) void handleSaveRequest(message as SaveRequestMessage)
     if (type === UNSAVE_REQUEST) handleUnsaveRequest()
   })
 }

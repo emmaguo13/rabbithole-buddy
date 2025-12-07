@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { requireUser } from "@/server/auth"
-import { parseJson, serverError } from "@/server/http"
+import { optionsResponse, parseJson, serverError, withCors } from "@/server/http"
 import { ensureItemOwnership } from "@/server/items"
 import { noteSchema } from "@/server/schemas"
 import { supabase } from "@/server/supabase"
@@ -40,5 +40,9 @@ export async function POST(
     return serverError("Failed to save note")
   }
 
-  return NextResponse.json({ note: data as NoteRecord })
+  return withCors(NextResponse.json({ note: data as NoteRecord }))
+}
+
+export function OPTIONS() {
+  return optionsResponse()
 }

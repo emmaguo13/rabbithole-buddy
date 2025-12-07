@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { requireUser } from "@/server/auth"
-import { serverError } from "@/server/http"
+import { optionsResponse, serverError, withCors } from "@/server/http"
 import { ensureItemOwnership } from "@/server/items"
 import { supabase } from "@/server/supabase"
 
@@ -20,7 +20,7 @@ export async function DELETE(
     .single()
 
   if (error || !note) {
-    return NextResponse.json({ error: "Note not found" }, { status: 404 })
+    return withCors(NextResponse.json({ error: "Note not found" }, { status: 404 }))
   }
 
   const owner = await ensureItemOwnership(note.item_id, auth.userId)
@@ -32,5 +32,9 @@ export async function DELETE(
     return serverError("Failed to delete note")
   }
 
-  return NextResponse.json({ success: true })
+  return withCors(NextResponse.json({ success: true }))
+}
+
+export function OPTIONS() {
+  return optionsResponse()
 }

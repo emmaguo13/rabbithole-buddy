@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { supabase } from "./supabase"
 import type { ItemRecord } from "./types"
+import { withCors } from "./http"
 
 export async function ensureItemOwnership(
   itemId: string,
@@ -14,7 +15,7 @@ export async function ensureItemOwnership(
     .single()
 
   if (error || !data) {
-    return NextResponse.json({ error: "Item not found" }, { status: 404 })
+    return withCors(NextResponse.json({ error: "Item not found" }, { status: 404 }))
   }
 
   return data as ItemRecord

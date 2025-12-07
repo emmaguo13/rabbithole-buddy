@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { requireUser } from "@/server/auth"
-import { parseJson, serverError } from "@/server/http"
+import { optionsResponse, parseJson, serverError, withCors } from "@/server/http"
 import { ensureItemOwnership } from "@/server/items"
 import { itemUpdateSchema } from "@/server/schemas"
 import { supabase } from "@/server/supabase"
@@ -33,12 +33,14 @@ export async function GET(
     return serverError("Failed to load item")
   }
 
-  return NextResponse.json({
-    item: item as ItemRecord,
-    notes: (notesRes.data ?? []) as NoteRecord[],
-    highlights: (highlightsRes.data ?? []) as HighlightRecord[],
-    drawings: (drawingsRes.data ?? []) as DrawingRecord[],
-  })
+  return withCors(
+    NextResponse.json({
+      item: item as ItemRecord,
+      notes: (notesRes.data ?? []) as NoteRecord[],
+      highlights: (highlightsRes.data ?? []) as HighlightRecord[],
+      drawings: (drawingsRes.data ?? []) as DrawingRecord[],
+    }),
+  )
 }
 
 export async function PATCH(
@@ -67,7 +69,7 @@ export async function PATCH(
     return serverError("Failed to update item")
   }
 
-  return NextResponse.json({ item: data as ItemRecord })
+  return withCors(NextResponse.json({ item: data as ItemRecord }))
 }
 
 export async function DELETE(
@@ -86,5 +88,9 @@ export async function DELETE(
     return serverError("Failed to delete item")
   }
 
-  return NextResponse.json({ success: true })
+  return withCors(NextResponse.json({ success: true }))
+}
+
+export function OPTIONS() {
+  return optionsResponse()
 }
