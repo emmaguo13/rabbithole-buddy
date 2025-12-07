@@ -39,13 +39,8 @@ export default async function HomePage() {
       <section className="content-block">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Recommendations</p>
-            <h2>Suggested reading paths</h2>
-            <p className="lede subtle">
-              Based on your saved items and groups. Queries are ready to search anywhere.
-            </p>
+            <h2>Suggested reading</h2>
           </div>
-          <p className="pill">{recommendations.length ? "Fresh ideas" : "Waiting for data"}</p>
         </div>
 
         {!recommendations.length && (
@@ -58,7 +53,6 @@ export default async function HomePage() {
         <div className="rec-list">
           {recommendations.map((rec, idx) => (
             <article key={idx} className="rec-card">
-              <p className="eyebrow">Idea {idx + 1}</p>
               <h3>{rec.title}</h3>
               <p className="subtle">{rec.summary}</p>
               <a
@@ -77,13 +71,8 @@ export default async function HomePage() {
       <section>
         <div className="section-head">
           <div>
-            <p className="eyebrow">Groups</p>
-            <h2>Your saved clusters</h2>
-            <p className="lede subtle">
-              Each card shows a group label, optional summary, and the latest links inside it.
-            </p>
+            <h2>Your clusters</h2>
           </div>
-          <p className="pill">Live data</p>
         </div>
 
         {!groups.length && (
@@ -102,9 +91,6 @@ export default async function HomePage() {
                   <h3>{group.label}</h3>
                   {group.summary && <p className="subtle">{group.summary}</p>}
                 </div>
-                <span className="pill">
-                  {group.items.length} link{group.items.length === 1 ? "" : "s"}
-                </span>
               </div>
               <ul className="group-items">
                 {group.items.map((item) => (
