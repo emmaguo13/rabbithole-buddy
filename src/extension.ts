@@ -1,5 +1,5 @@
 import { attachCanvasEvents } from "./drawing"
-import { saveItem } from "./api"
+import { loadPageState, saveHighlight, saveItem, saveNote } from "./api"
 import {
   SAVE_REQUEST,
   SAVE_STATE_CHANGED,
@@ -7,7 +7,7 @@ import {
   type ContentMessage,
   type SaveRequestMessage,
 } from "./messages"
-import { attachDocumentEvents } from "./notes"
+import { attachDocumentEvents, restoreHighlightEntry, restoreNoteAt } from "./notes"
 
 export type Tool = "none" | "draw" | "note" | "highlight"
 
@@ -25,13 +25,16 @@ let overlay: HTMLDivElement | null = null
 let toolbar: HTMLDivElement | null = null
 let documentReady = document.readyState !== "loading"
 let saved = false
+let savedItemId: string | null = null
+let loadedHighlights = false
 
 async function handleSaveRequest(message: SaveRequestMessage) {
   const pageUrl = message.url || window.location.href
   const title = document.title
 
   try {
-    await saveItem({ pageUrl, title })
+    const item = await saveItem({ pageUrl, title })
+    savedItemId = item.id
     saved = true
     maybeInitUI()
     toggleUIVisibility(true)
@@ -44,6 +47,8 @@ async function handleSaveRequest(message: SaveRequestMessage) {
 
 function handleUnsaveRequest() {
   saved = false
+  savedItemId = null
+  loadedHighlights = false
   setTool("none")
   toggleUIVisibility(false)
   reportSaveState(false)
@@ -76,7 +81,56 @@ function maybeInitUI() {
   attachDocumentEvents({
     getTool: getActiveTool,
     isSaved: () => saved,
+    getItemId: () => savedItemId,
+    persistHighlight: async ({ id, text, rects }) => {
+      if (!savedItemId) return null
+      try {
+        const savedHighlight = await saveHighlight({
+          itemId: savedItemId,
+          id,
+          text,
+          rects,
+        })
+        return savedHighlight.id
+      } catch (err) {
+        console.warn("[annotator] Failed to persist highlight", err)
+        return null
+      }
+    },
+    persistNote: async ({ id, content, rects, position }) => {
+      if (!savedItemId) return null
+      try {
+        const savedNote = await saveNote({
+          itemId: savedItemId,
+          id,
+          content,
+          rects,
+          position,
+        })
+        return savedNote.id
+      } catch (err) {
+        console.warn("[annotator] Failed to persist note", err)
+        return null
+      }
+    },
   })
+}
+
+async function bootstrapSavedState() {
+  try {
+    const state = await loadPageState(window.location.href)
+    if (!state) return
+    saved = true
+    savedItemId = state.item.id
+    loadedHighlights = true
+    maybeInitUI()
+    toggleUIVisibility(true)
+    reportSaveState(true)
+    restoreHighlights(state.highlights)
+    restoreNotes(state.notes)
+  } catch (err) {
+    console.warn("[annotator] Failed to load saved state", err)
+  }
 }
 
 function resizeCanvas() {
@@ -158,6 +212,35 @@ function toggleUIVisibility(visible: boolean) {
   updateCanvasPointerState()
 }
 
+function restoreHighlights(highlights: Array<{ id: string; rects_json: unknown }>) {
+  highlights.forEach((h) => {
+    const rects = Array.isArray(h.rects_json) ? (h.rects_json as any) : []
+    restoreHighlightEntry(
+      h.id,
+      rects
+        .map((r: any) => ({
+          top: Number(r.top) || 0,
+          left: Number(r.left) || 0,
+          width: Number(r.width) || 0,
+          height: Number(r.height) || 0,
+        }))
+        .filter((r) => r.width > 0 && r.height > 0),
+    )
+  })
+}
+
+function restoreNotes(
+  notes: Array<{
+    id: string
+    content: string | null
+    position_json: { left?: number; top?: number } | null
+  }>,
+) {
+  notes.forEach((n) => {
+    restoreNoteAt(n.id, n.content, n.position_json ?? null)
+  })
+}
+
 function reportSaveState(isSaved: boolean) {
   try {
     chrome.runtime?.sendMessage?.({
@@ -186,7 +269,10 @@ if (!documentReady) {
       maybeInitUI()
       toggleUIVisibility(true)
     }
+    void bootstrapSavedState()
   })
+} else {
+  void bootstrapSavedState()
 }
 
 bindMessageListener()

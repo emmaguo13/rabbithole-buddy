@@ -3,6 +3,14 @@ import type { Tool } from "./extension"
 type Args = {
   getTool: () => Tool
   isSaved: () => boolean
+  getItemId: () => string | null
+  persistHighlight: (payload: { id?: string; text?: string; rects: Rect[] }) => Promise<string | null>
+  persistNote: (payload: {
+    id?: string
+    content?: string
+    rects: Rect[]
+    position?: { left: number; top: number }
+  }) => Promise<string | null>
 }
 
 type Rect = { top: number; left: number; width: number; height: number }
@@ -18,7 +26,21 @@ type HighlightEntry = {
 let highlightCounter = 0
 const highlights = new Map<string, HighlightEntry>()
 
-export function attachDocumentEvents({ getTool, isSaved }: Args) {
+let getItemIdRef: () => string | null = () => null
+let persistHighlightRef: Args["persistHighlight"] = async () => null
+let persistNoteRef: Args["persistNote"] = async () => null
+
+export function attachDocumentEvents({
+  getTool,
+  isSaved,
+  getItemId,
+  persistHighlight,
+  persistNote,
+}: Args) {
+  getItemIdRef = getItemId
+  persistHighlightRef = persistHighlight
+  persistNoteRef = persistNote
+
   document.addEventListener("mouseup", () => {
     if (!isSaved()) return
     if (getTool() === "highlight") highlightSelection()
@@ -43,6 +65,9 @@ export function attachDocumentEvents({ getTool, isSaved }: Args) {
 }
 
 function highlightSelection() {
+  const itemId = getItemIdRef()
+  if (!itemId) return
+
   const sel = window.getSelection()
   if (!sel || sel.rangeCount === 0) return
 
@@ -68,6 +93,14 @@ function highlightSelection() {
   }
   highlights.set(id, entry)
   ensureHighlightsVisible()
+
+  void persistHighlightRef({
+    id,
+    text: range.toString(),
+    rects,
+  }).then((savedId) => {
+    if (savedId) updateHighlightId(id, savedId)
+  })
 }
 
 function addNoteForHighlight(mark: HTMLElement) {
@@ -85,6 +118,7 @@ function addNoteAt(
   y: number,
   highlightId?: string,
   highlightEl?: HTMLElement,
+  initialContent?: string,
 ): HTMLDivElement {
   const note = document.createElement("div")
   note.className = "annotator-note"
@@ -99,7 +133,7 @@ function addNoteAt(
   const body = document.createElement("div")
   body.className = "annotator-note-body"
   body.contentEditable = "true"
-  body.textContent = "Edit me"
+  body.textContent = initialContent ?? "Edit me"
 
   note.appendChild(header)
   note.appendChild(body)
@@ -108,6 +142,23 @@ function addNoteAt(
   if (highlightId) {
     registerHighlightNote(highlightId, highlightEl, note)
   }
+
+  const persist = () => {
+    const rects =
+      highlightId && highlights.has(highlightId) ? getHighlightEntry(highlightId).rects : []
+    const position = { left: x, top: y }
+    const content = body.textContent ?? ""
+    void persistNoteRef({
+      id: note.dataset.noteId,
+      content,
+      rects,
+      position,
+    }).then((savedId) => {
+      if (savedId) note.dataset.noteId = savedId
+    })
+  }
+
+  body.addEventListener("blur", persist)
 
   return note
 }
@@ -210,6 +261,38 @@ function getHighlightEntry(id: string): HighlightEntry {
   }
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return highlights.get(id)!
+}
+
+function updateHighlightId(oldId: string, newId: string) {
+  if (oldId === newId) return
+  const entry = highlights.get(oldId)
+  if (!entry) return
+  highlights.delete(oldId)
+  entry.id = newId
+  if (entry.highlight) entry.highlight.dataset.annotatorHighlightId = newId
+  if (entry.note) entry.note.dataset.highlightId = newId
+  highlights.set(newId, entry)
+}
+
+export function restoreHighlightEntry(id: string, rects: Rect[]) {
+  const entry: HighlightEntry = {
+    id,
+    rects,
+    ghosts: [],
+  }
+  highlights.set(id, entry)
+  ensureHighlightsVisible()
+}
+
+export function restoreNoteAt(
+  id: string,
+  content: string | null,
+  position: { left?: number; top?: number } | null,
+) {
+  const x = position?.left ?? 24
+  const y = position?.top ?? 24
+  const note = addNoteAt(x, y, undefined, undefined, content ?? undefined)
+  note.dataset.noteId = id
 }
 
 function getHighlightElement(entry: HighlightEntry): HTMLElement | null {

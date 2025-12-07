@@ -3,6 +3,23 @@ const AUTH_TOKEN_KEY = "annotator:authToken"
 const FALLBACK_USER_ID = "00000000-0000-0000-0000-000000000000" // UUID for dev-only fallback
 
 type ItemResponse = { item: { id: string } }
+type HighlightResponse = { highlight: { id: string } }
+type NoteResponse = { note: { id: string } }
+type PageStateResponse = {
+  item: { id: string }
+  notes: Array<{
+    id: string
+    content: string | null
+    position_json: { left?: number; top?: number } | null
+    rects_json: unknown
+  }>
+  highlights: Array<{
+    id: string
+    text: string | null
+    rects_json: unknown
+  }>
+  drawings: unknown[]
+}
 
 declare const chrome: {
   storage?: {
@@ -52,4 +69,82 @@ export async function saveItem(params: { pageUrl: string; title?: string }) {
 
   const json = (await res.json()) as ItemResponse
   return json.item
+}
+
+export async function saveHighlight(params: {
+  itemId: string
+  id?: string
+  text?: string
+  rects?: unknown
+}) {
+  const token = await ensureAuthToken()
+  const res = await fetch(`${API_BASE}/items/${params.itemId}/highlights`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-user-id": token,
+    },
+    body: JSON.stringify({
+      id: params.id,
+      text: params.text,
+      rects: params.rects,
+    }),
+  })
+
+  if (!res.ok) {
+    const errorBody = await res.text().catch(() => "")
+    throw new Error(`Failed to save highlight: ${res.status} ${errorBody}`)
+  }
+
+  const json = (await res.json()) as HighlightResponse
+  return json.highlight
+}
+
+export async function saveNote(params: {
+  itemId: string
+  id?: string
+  content?: string
+  position?: unknown
+  rects?: unknown
+}) {
+  const token = await ensureAuthToken()
+  const res = await fetch(`${API_BASE}/items/${params.itemId}/notes`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-user-id": token,
+    },
+    body: JSON.stringify({
+      id: params.id,
+      content: params.content,
+      position: params.position,
+      rects: params.rects,
+    }),
+  })
+
+  if (!res.ok) {
+    const errorBody = await res.text().catch(() => "")
+    throw new Error(`Failed to save note: ${res.status} ${errorBody}`)
+  }
+
+  const json = (await res.json()) as NoteResponse
+  return json.note
+}
+
+export async function loadPageState(pageUrl: string) {
+  const token = await ensureAuthToken()
+  const res = await fetch(`${API_BASE}/items/by-url?url=${encodeURIComponent(pageUrl)}`, {
+    headers: {
+      "x-user-id": token,
+    },
+  })
+
+  if (res.status === 404) return null
+  if (!res.ok) {
+    const body = await res.text().catch(() => "")
+    throw new Error(`Failed to load page state: ${res.status} ${body}`)
+  }
+
+  const json = (await res.json()) as PageStateResponse
+  return json
 }
