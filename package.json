@@ -3,10 +3,24 @@
   "version": "1.0.0",
   "scripts": {
     "build": "esbuild src/extension.ts src/bookmark.ts --bundle --outdir=dist --format=esm --sourcemap && cp manifest.json dist/ && cp src/styles.css dist/ && cp -R icons dist/",
-    "watch": "esbuild src/extension.ts src/bookmark.ts --bundle --outdir=dist --format=esm --sourcemap --watch"
+    "watch": "esbuild src/extension.ts src/bookmark.ts --bundle --outdir=dist --format=esm --sourcemap --watch",
+    "dev": "next dev",
+    "build:next": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "next": "^14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/node": "^22.7.4",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
     "esbuild": "^0.24.0",
+    "tsx": "^4.19.1",
     "typescript": "^5.6.0"
   }
 }
