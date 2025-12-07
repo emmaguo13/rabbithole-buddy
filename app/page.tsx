@@ -20,14 +20,59 @@ type Group = {
   items: GroupItem[]
 }
 
+type Recommendation = {
+  title: string
+  summary: string
+  suggested_query: string
+}
+
 const DEMO_USER_ID =
   process.env.NEXT_PUBLIC_DEMO_USER_ID ?? process.env.DEMO_USER_ID ?? "00000000-0000-0000-0000-000000000000"
 
 export default async function HomePage() {
   const { groups, error } = await loadGroups()
+  const { recommendations, recError } = await loadRecommendations()
 
   return (
     <main className="page">
+
+      <section className="content-block">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Recommendations</p>
+            <h2>Suggested reading paths</h2>
+            <p className="lede subtle">
+              Based on your saved items and groups. Queries are ready to search anywhere.
+            </p>
+          </div>
+          <p className="pill">{recommendations.length ? "Fresh ideas" : "Waiting for data"}</p>
+        </div>
+
+        {!recommendations.length && (
+          <div className="empty-state">
+            <p>No recommendations yet.</p>
+            <p className="subtle">Save a few items and refresh to see suggestions.</p>
+          </div>
+        )}
+
+        <div className="rec-list">
+          {recommendations.map((rec, idx) => (
+            <article key={idx} className="rec-card">
+              <p className="eyebrow">Idea {idx + 1}</p>
+              <h3>{rec.title}</h3>
+              <p className="subtle">{rec.summary}</p>
+              <a
+                className="button ghost"
+                href={`https://www.google.com/search?q=${encodeURIComponent(rec.suggested_query)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Search this ↗
+              </a>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <section>
         <div className="section-head">
@@ -57,7 +102,9 @@ export default async function HomePage() {
                   <h3>{group.label}</h3>
                   {group.summary && <p className="subtle">{group.summary}</p>}
                 </div>
-                <span className="pill">{group.items.length} link{group.items.length === 1 ? "" : "s"}</span>
+                <span className="pill">
+                  {group.items.length} link{group.items.length === 1 ? "" : "s"}
+                </span>
               </div>
               <ul className="group-items">
                 {group.items.map((item) => (
@@ -87,11 +134,7 @@ async function loadGroups(): Promise<{ groups: Group[]; error?: string }> {
   }
 
   try {
-    const hdrs = headers()
-    const host = hdrs.get("host")
-    const protocol = hdrs.get("x-forwarded-proto") ?? "http"
-    const originEnv = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.SITE_URL
-    const origin = originEnv || (host ? `${protocol}://${host}` : undefined)
+    const origin = getOrigin()
     if (!origin) {
       return { groups: [], error: "Could not resolve API origin." }
     }
@@ -114,6 +157,48 @@ async function loadGroups(): Promise<{ groups: Group[]; error?: string }> {
     console.error("[ui] Failed to load groups", error)
     return { groups: [], error: "Could not reach API." }
   }
+}
+
+async function loadRecommendations(): Promise<{ recommendations: Recommendation[]; recError?: string }> {
+  if (!DEMO_USER_ID) {
+    return {
+      recommendations: [],
+      recError: "Set DEMO_USER_ID or NEXT_PUBLIC_DEMO_USER_ID to fetch your groups.",
+    }
+  }
+
+  try {
+    const origin = getOrigin()
+    if (!origin) {
+      return { recommendations: [], recError: "Could not resolve API origin." }
+    }
+
+    const res = await fetch(`${origin}/api/recommendations`, {
+      cache: "no-store",
+      headers: {
+        "x-user-id": DEMO_USER_ID,
+      },
+    })
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      return { recommendations: [], recError: body?.error ?? "Failed to load recommendations." }
+    }
+
+    const json = (await res.json()) as { recommendations: Recommendation[]; message?: string }
+    return { recommendations: json.recommendations ?? [], recError: json.message }
+  } catch (error) {
+    console.error("[ui] Failed to load recommendations", error)
+    return { recommendations: [], recError: "Could not reach recommendations." }
+  }
+}
+
+function getOrigin(): string | undefined {
+  const hdrs = headers()
+  const host = hdrs.get("host")
+  const protocol = hdrs.get("x-forwarded-proto") ?? "http"
+  const originEnv = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.SITE_URL
+  return originEnv || (host ? `${protocol}://${host}` : undefined)
 }
 
 function cleanUrl(url: string): string {
