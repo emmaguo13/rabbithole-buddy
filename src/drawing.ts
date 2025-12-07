@@ -14,13 +14,13 @@ export function attachCanvasEvents(args: {
     if (getTool() !== "draw") return
     drawing = true
     ctx.beginPath()
-    ctx.moveTo(e.clientX, e.clientY)
+    ctx.moveTo(e.pageX, e.pageY)
   })
 
   canvas.addEventListener("mousemove", (e) => {
     if (!drawing || getTool() !== "draw") return
-    ctx.lineTo(e.clientX, e.clientY)
-    ctx.strokeStyle = "yellow"
+    ctx.lineTo(e.pageX, e.pageY)
+    ctx.strokeStyle = "#000"
     ctx.lineWidth = 4
     ctx.lineCap = "round"
     ctx.stroke()

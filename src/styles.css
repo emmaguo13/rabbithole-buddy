@@ -1,5 +1,5 @@
 #annotator-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 2147483647;
@@ -58,4 +58,11 @@
   background: yellow;
   padding: 0 2px;
   cursor: pointer;
+}
+.annotator-highlight-ghost {
+  position: absolute;
+  background: yellow;
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 2147483646;
 }

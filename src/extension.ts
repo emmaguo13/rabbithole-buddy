@@ -69,9 +69,33 @@ function maybeInitUI() {
 }
 
 function resizeCanvas() {
-  if (!canvas || !overlay) return
-  canvas.width = window.innerWidth
-  canvas.height = window.innerHeight
+  if (!canvas || !overlay || !ctx) return
+
+  const nextWidth = Math.max(
+    document.documentElement.scrollWidth,
+    document.documentElement.clientWidth,
+    window.innerWidth,
+  )
+  const nextHeight = Math.max(
+    document.documentElement.scrollHeight,
+    document.documentElement.clientHeight,
+    window.innerHeight,
+  )
+
+  if (canvas.width === nextWidth && canvas.height === nextHeight) return
+
+  const temp = document.createElement("canvas")
+  temp.width = canvas.width
+  temp.height = canvas.height
+  const tempCtx = temp.getContext("2d")
+  if (tempCtx) tempCtx.drawImage(canvas, 0, 0)
+
+  canvas.width = nextWidth
+  canvas.height = nextHeight
+  overlay.style.width = `${nextWidth}px`
+  overlay.style.height = `${nextHeight}px`
+
+  if (tempCtx) ctx.drawImage(temp, 0, 0)
 }
 
 function createToolbar() {
