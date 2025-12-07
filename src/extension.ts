@@ -1,5 +1,5 @@
 import { attachCanvasEvents } from "./drawing"
-import {attachDocumentEvents } from "./notes"
+import { attachDocumentEvents } from "./notes"
 
 export type Tool = "none" | "draw" | "highlight" | "note";
 
@@ -25,10 +25,10 @@ function init() {
   createToolbar();
   attachCanvasEvents({
     canvas,
-    ctx, 
-    currentTool
+    ctx,
+    getTool: () => currentTool,
   });
-  attachDocumentEvents(currentTool);
+  attachDocumentEvents(() => currentTool);
 }
 
 function resizeCanvas() {

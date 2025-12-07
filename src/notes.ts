@@ -1,13 +1,13 @@
-import type { Tool } from "./extension.ts"
+import type { Tool } from "./extension"
 
-export function attachDocumentEvents(currentTool: Tool) {
+export function attachDocumentEvents(getTool: () => Tool) {
   document.addEventListener("mouseup", () => {
-    if (currentTool === "highlight") highlightSelection();
-  });
+    if (getTool() === "highlight") highlightSelection()
+  })
 
   document.addEventListener("dblclick", (e) => {
-    if (currentTool === "note") addNoteAt(e.clientX, e.clientY);
-  });
+    if (getTool() === "note") addNoteAt(e.clientX, e.clientY)
+  })
 }
 
 function highlightSelection() {
